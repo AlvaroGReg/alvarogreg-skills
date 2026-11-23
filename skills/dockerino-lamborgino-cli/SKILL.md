@@ -7,8 +7,8 @@ description: Use the Dockerino Lamborgino Windows application through its CLI to
 
 Use this skill when operating the Dockerino Lamborgino application through its
 CLI. The application targets Windows and requires the .NET 10 runtime. For
-development commands, install the .NET 10 SDK and run commands from
-`dockerino-lamborgino/`.
+development commands, install the .NET 10 SDK and run commands from the
+repository root.
 
 ## Operating principles
 
@@ -129,22 +129,21 @@ dotnet @cli dashboard open
 
 ## Git repository operations
 
-Use only repository paths listed on the explicitly selected project. Obtain
-those paths from `get`; do not discover or infer additional repositories.
+The Dockerino CLI only exposes batch fetch and fast-forward-only pull because
+these operations use the project's associated repositories and application
+guardrails. For status or branch switching, use the application UI or invoke
+Git directly in the repository. For Dockerino fetch/pull, use only repository
+paths listed on the explicitly selected project. Obtain those paths from `get`;
+do not discover or infer additional repositories.
 
 ```powershell
-dotnet @cli git status $projectId
-dotnet @cli git switch $projectId "C:\My Projects\Example" local main
-dotnet @cli git switch $projectId "C:\My Projects\Example" remote origin/feature
 dotnet @cli git fetch $projectId "C:\My Projects\Example" "C:\Other\Repository"
-dotnet @cli git pull $projectId "C:\My Projects\Example"
+dotnet @cli git pull $projectId "C:\My Projects\Example" "C:\Other\Repository"
 ```
 
-Switching affects one repository at a time. Selecting a remote branch can
-create its local tracking branch. Git decides whether local changes permit the
-operation; the application does not stash them.
-
-Fetch and pull are explicit. Fetch uses the current branch's upstream remote,
+Fetch and pull are explicit batch operations. Each repository must be
+associated with the project. A failure for one repository does not prevent
+processing the others. Fetch uses the current branch's upstream remote,
 or the sole configured remote if there is no upstream; it reports missing or
 ambiguous remotes instead of guessing. Pull requires an upstream and is
 fast-forward-only. It may update remote-tracking references before reporting
@@ -195,8 +194,6 @@ get <project-id>
 register <name> <absolute-directory>
 validate <json-file>
 save <json-file> [expected-revision]
-git status <project-id>
-git switch <project-id> <repository-path> local|remote <branch>
 git fetch|pull <project-id> <repository-path> [repository-path ...]
 projects refresh [project-id]
 launch start <project-id> <action-id>
@@ -207,5 +204,5 @@ session inspect|stop|output|follow <session-id> [--offset <offset>]
 dashboard open
 ```
 
-For complete implementation status and the canonical examples, consult
-[`dockerino-lamborgino/README.md`](../../../dockerino-lamborgino/README.md).
+For implementation status and usage details, consult the repository
+[`README.md`](../../../README.md).
