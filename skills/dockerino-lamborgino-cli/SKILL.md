@@ -6,8 +6,9 @@ description: Use the Dockerino Lamborgino Windows application through its CLI to
 # Dockerino Lamborgino CLI
 
 Use this skill when operating the Dockerino Lamborgino application through its
-CLI. The application targets Windows and requires the .NET 10 runtime. For
-development commands, install the .NET 10 SDK and run commands from the
+CLI. The application targets Windows. A framework-dependent CLI requires the
+.NET 10 Windows Desktop Runtime; self-contained published builds bundle .NET.
+For development commands, install the .NET 10 SDK and run commands from the
 repository root.
 
 ## Operating principles
@@ -40,11 +41,13 @@ $cli = @("run", "--project", ".\src\DockerinoLamborgino.Cli", "--")
 dotnet @cli list
 ```
 
-The examples below use this `$cli` array. If a built `dockerino-cli` executable
-is available, it can be used instead. The CLI executable must be able to find
-the application executable, or `DOCKERINO_APP_PATH` must point to its absolute
-path. The CLI and application use a current-user named pipe. For isolated
-instances, set the same `DOCKERINO_PIPE_NAME` in both processes.
+The examples below use this `$cli` array. Use `--help` to display syntax and
+`--version` to display the CLI assembly version. A built
+`DockerinoLamborgino.Cli.exe` can be used instead. For commands that communicate
+with the application, the application executable must be beside the CLI, or
+`DOCKERINO_APP_PATH` must point to its absolute path. The CLI and application
+use a current-user named pipe. For isolated instances, set the same
+`DOCKERINO_PIPE_NAME` in both processes.
 
 The project store defaults to
 `%LOCALAPPDATA%\DockerinoLamborgino\projects`. An absent store is empty.
@@ -97,7 +100,9 @@ The JSON file contains one project object with:
   outside the project directory.
 - `actions`: array, which may be empty. Each action has a unique GUID `id`,
   nonblank `name`, `color` in `#RRGGBB` format, optional non-null `description`,
-  and a nonempty `processes` array.
+  optional `isQuickLaunch` boolean (defaults to `false`), and a nonempty
+  `processes` array. `isQuickLaunch: true` shows a play button for that action
+  beside the project name in the dashboard.
 - Each process has a unique GUID `id`, nonblank `name`, an existing absolute
   `workingDirectory`, and a nonempty `steps` array.
 - Each step has a unique GUID `id`, a nonblank `command`, and optional
@@ -186,6 +191,29 @@ If Docker cleanup is requested, first identify the exact Compose project and
 use an explicit, scoped Docker operation; never stop unrelated containers or
 the Docker daemon.
 
+### Reset a configured launch
+
+Reset replaces the terminal for the configured process and replays its complete
+saved command sequence from the original working directory. This reruns commands
+and their side effects; the replacement has a new session ID and does not keep
+the old shell state or output. Other terminals are unaffected, and detached
+Docker containers are not stopped.
+
+```powershell
+# From a managed configured terminal:
+dockerino reset
+
+# From an external CLI:
+dotnet @cli session reset $sessionId
+```
+
+Reset requires the application to be running and does not start it. The CLI
+response confirms request acceptance, not successful completion. Inspect the
+associated launch with `launch inspect` to check the pending, succeeded, or
+failed reset outcome. The terminal-context shorthand is not supported in an
+independent **New terminal**. A self-reset can close its invoking terminal and
+CLI before the response is displayed.
+
 ## Command reference
 
 ```text
@@ -200,8 +228,11 @@ launch start <project-id> <action-id>
 launch list
 launch inspect|stop <launch-id>
 session list
-session inspect|stop|output|follow <session-id> [--offset <offset>]
+session inspect|stop|reset|output|follow <session-id> [--offset <offset>]
+reset
 dashboard open
+--help
+--version
 ```
 
 For implementation status and usage details, consult the repository
